@@ -267,52 +267,7 @@
         </div>
         <!-- Menu End -->
 
-        <style>
-            .menu-img-container {
-                width: 150px;
-                height: 150px;
-                overflow: hidden;
-                border-radius: 8px;
-                position: relative;
-            }
-
-            .menu-img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                object-position: center;
-                transition: transform 0.5s ease;
-            }
-
-            .menu-img.zoom-img:hover {
-                transform: scale(1.1);
-            }
-
-            .menu-item {
-                background: #fff;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 0 15px rgba(0,0,0,0.1);
-                transition: transform 0.3s ease;
-            }
-
-            .menu-item:hover {
-                transform: translateY(-5px);
-            }
-
-            .menu-item h5 {
-                margin-bottom: 10px;
-            }
-
-            .menu-item .text-primary {
-                font-weight: bold;
-            }
-
-            .menu-item small {
-                color: #666;
-                line-height: 1.6;
-            }
-        </style>
+        
 
 
         <!-- Reservation Start -->

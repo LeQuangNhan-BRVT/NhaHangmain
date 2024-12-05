@@ -46,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+        Route::get('/{booking}/edit', [BookingController::class, 'edit'])->name('edit');
+        Route::put('/{booking}', [BookingController::class, 'update'])->name('update');
+        Route::put('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
     });
 });
 

@@ -17,7 +17,7 @@
                 <!-- Thêm tabs cho 2 loại đặt bàn -->
                 <ul class="nav nav-tabs mb-4" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#reservation-only" type="button">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#only_table" type="button">
                             Chỉ đặt bàn
                         </button>
                     </li>
@@ -30,7 +30,7 @@
 
                 <div class="tab-content">
                     <!-- Tab chỉ đặt bàn -->
-                    <div class="tab-pane fade show active" id="reservation-only">
+                    <div class="tab-pane fade show active" id="only_table">
                         <form method="POST" action="{{ route('front.booking.store') }}">
                             @csrf
                             <input type="hidden" name="booking_type" value="only_table">

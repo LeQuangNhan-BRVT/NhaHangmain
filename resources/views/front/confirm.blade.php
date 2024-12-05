@@ -30,7 +30,7 @@
                         </tr>
                     </table>
 
-                    @if(isset($bookingData['menu_items']))
+                    @if($bookingData['booking_type'] === 'with_menu' && isset($bookingData['menu_items']))
                     <!-- Danh sách món ăn -->
                     <h5 class="mt-4">Món ăn đã chọn</h5>
                     <table class="table">
@@ -43,16 +43,23 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($bookingData['menu_items'] as $item)
-                            @php
-                                $menu = App\Models\Menu::find($item['menu_id']);
-                            @endphp
-                            <tr>
-                                <td>{{ $menu->name }}</td>
-                                <td>{{ $item['quantity'] }}</td>
-                                <td>{{ number_format($menu->price) }}đ</td>
-                                <td>{{ number_format($menu->price * $item['quantity']) }}đ</td>
-                            </tr>
+                            @php $totalAmount = 0; @endphp
+                            @foreach($bookingData['menu_items'] as $menuId => $item)
+                                @if(isset($item['selected']) && $item['selected'] === 'on')
+                                    @php
+                                        $menu = App\Models\Menu::find($menuId);
+                                        if ($menu) {
+                                            $subtotal = $menu->price * $item['quantity'];
+                                            $totalAmount += $subtotal;
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $menu->name }}</td>
+                                        <td>{{ $item['quantity'] }}</td>
+                                        <td>{{ number_format($menu->price) }}đ</td>
+                                        <td>{{ number_format($subtotal) }}đ</td>
+                                    </tr>
+                                @endif
                             @endforeach
                         </tbody>
                         <tfoot>
@@ -62,7 +69,7 @@
                             </tr>
                             <tr>
                                 <td colspan="3" class="text-end"><strong>Tiền đặt cọc (30%):</strong></td>
-                                <td><strong>{{ number_format($depositAmount) }}đ</strong></td>
+                                <td><strong>{{ number_format($totalAmount * 0.3) }}đ</strong></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -71,9 +78,9 @@
                     <!-- Form thanh toán -->
                     <form action="{{ route('front.booking.process-payment') }}" method="POST" class="mt-4">
                         @csrf
-                        <input type="hidden" name="amount" value="{{ $depositAmount }}">
+                        <input type="hidden" name="amount" value="{{ isset($totalAmount) ? ($totalAmount * 0.3) : 0 }}">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-wallet me-2"></i>Thanh toán qua MoMo
+                            <i class="fas fa-wallet me-2"></i>Thanh toán qua VNPay
                         </button>
                     </form>
                 </div>

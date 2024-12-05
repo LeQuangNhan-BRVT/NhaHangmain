@@ -15,7 +15,7 @@
     <div class="container">
         <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
             <h5 class="section-title ff-secondary text-center text-primary fw-normal">Thực đơn</h5>
-            <h1 class="mb-5">Các món ăn phổ biến nhất</h1>
+            <h1 class="mb-5">Các món ăn phổ biến</h1>
         </div>
         <div class="tab-class text-center wow fadeInUp" data-wow-delay="0.1s">
             <ul class="nav nav-pills d-inline-flex justify-content-center border-bottom mb-5">
@@ -41,23 +41,23 @@
                     <div class="row g-4">
                         @foreach($category->menu->where('status', 1)->sortBy('position') as $item)
                         <div class="col-lg-6">
-                            <div class="d-flex align-items-center">
+                            <div class="menu-item d-flex align-items-center">
                                 <div class="menu-img-container">
-                                    <img class="flex-shrink-0 img-fluid rounded menu-img" 
-                                         src="{{ URL::to('/'.$item->image) }}"
-                                         onerror="this.onerror=null; this.src='/uploads/menu/1732596610_cook.jpg';"
-                                         alt="{{ $item->name }}">
+                                    <a href="{{ route('front.menu.detail', $item->id) }}" class="text-decoration-none">
+                                        <img class="flex-shrink-0 img-fluid rounded menu-img zoom-img" 
+                                             src="{{ URL::to('/'.$item->image) }}"
+                                             onerror="this.onerror=null; this.src='/uploads/menu/1732596610_cook.jpg';"
+                                             alt="{{ $item->name }}">
+                                    </a>
                                 </div>
                                 <div class="w-100 d-flex flex-column text-start ps-4">
                                     <h5 class="d-flex justify-content-between border-bottom pb-2">
-                                        <span>
-                                            <a href="{{ route('front.menu.detail', $item->id) }}" class="text-dark text-decoration-none">
-                                                {{ $item->name }}
-                                            </a>
-                                        </span>
+                                        <a href="{{ route('front.menu.detail', $item->id) }}" class="text-dark text-decoration-none">
+                                            <span>{{ $item->name }}</span>
+                                        </a>
                                         <span class="text-primary">{{ number_format($item->price, 0, ',', '.') }} VNĐ</span>
                                     </h5>
-                                    <small class="fst-italic">{{ $item->description }}</small>
+                                    <small class="fst-italic">{{ Str::limit($item->description, 100) }}</small>
                                 </div>
                             </div>
                         </div>

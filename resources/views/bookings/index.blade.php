@@ -40,17 +40,40 @@
                                         <td>{{ $booking->number_of_people }}</td>
                                         <td>
                                             <span class="badge bg-{{ $booking->status_color }}">
-                                                {{ $booking->status_text }}
+                                                @php
+                                                    $statusText = [
+                                                        'pending' => 'Đang chờ xác nhận',
+                                                        'confirmed' => 'Đã xác nhận',
+                                                        'cancelled' => 'Đã hủy',
+                                                        'completed' => 'Hoàn thành'
+                                                    ];
+                                                @endphp
+                                                {{ $statusText[$booking->status] ?? 'Không xác định' }}
                                             </span>
                                         </td>
                                         <td>{{ $booking->special_request ?: 'Không có' }}</td>
                                         <td>
-                                            @if($booking->can_cancel)
-                                                <form action="{{ route('bookings.cancel', $booking->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-danger btn-sm">Hủy đơn</button>
-                                                </form>
-                                            @endif
+                                            <div class="btn-group" role="group">
+                                                @if($booking->can_edit)
+                                                    <a href="{{ route('bookings.edit', $booking->id) }}" 
+                                                       class="btn btn-warning btn-sm">
+                                                        <i class="fas fa-edit"></i> Sửa
+                                                    </a>
+                                                @endif
+
+                                                @if($booking->status === 'pending')
+                                                    <form action="{{ route('bookings.cancel', $booking->id) }}" 
+                                                          method="POST" 
+                                                          class="d-inline" 
+                                                          onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <button type="submit" class="btn btn-danger btn-sm">
+                                                            <i class="fas fa-times"></i> Hủy đơn
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
