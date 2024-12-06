@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\AdminBookingController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\UserMenuController;
-
+use App\Http\Controllers\Front\VNPayController;
 
 
 
@@ -31,6 +31,7 @@ Route::post('/booking', [BookingController::class, 'store'])->name('front.bookin
 Route::get('/booking/success', [BookingController::class, 'success'])->name('front.booking.success');
 Route::get('/booking/confirm', [BookingController::class, 'showConfirmation'])->name('front.confirm');
 Route::post('/booking/process-payment', [BookingController::class, 'processPayment'])->name('front.booking.process-payment');
+Route::get('/booking/vnpay-return', [VNPayController::class, 'return'])->name('front.booking.vnpay-return');
 
 // User Auth Routes
 Route::middleware('auth')->group(function () {

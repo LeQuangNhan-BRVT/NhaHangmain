@@ -67,22 +67,33 @@
                                 <td colspan="3" class="text-end"><strong>Tổng tiền:</strong></td>
                                 <td><strong>{{ number_format($totalAmount) }}đ</strong></td>
                             </tr>
-                            <tr>
-                                <td colspan="3" class="text-end"><strong>Tiền đặt cọc (30%):</strong></td>
-                                <td><strong>{{ number_format($totalAmount * 0.3) }}đ</strong></td>
-                            </tr>
                         </tfoot>
                     </table>
                     @endif
 
-                    <!-- Form thanh toán -->
+                    <!-- Form xác nhận đặt bàn -->
+                    @if(!Auth::check())
+                    <form action="{{ route('front.booking.confirm') }}" method="POST" class="mt-4">
+                        @csrf
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Nhân viên của chúng tôi sẽ gọi điện xác nhận đặt bàn của bạn trong thời gian sớm nhất.
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Xác nhận đặt bàn
+                        </button>
+                    </form>
+                    @else
+                    <!-- Form thanh toán VNPay cho khách đã đăng nhập -->
                     <form action="{{ route('front.booking.process-payment') }}" method="POST" class="mt-4">
                         @csrf
-                        <input type="hidden" name="amount" value="{{ isset($totalAmount) ? ($totalAmount * 0.3) : 0 }}">
+                        <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+                        <input type="hidden" name="amount" value="{{ $totalAmount }}">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-wallet me-2"></i>Thanh toán qua VNPay
                         </button>
                     </form>
+                    @endif
                 </div>
             </div>
         </div>

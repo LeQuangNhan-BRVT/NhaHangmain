@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Log;
 class BookingController extends Controller
 {
     // Hiển thị danh sách booking của user
@@ -152,15 +152,22 @@ class BookingController extends Controller
                 'booking_date' => $booking->booking_date,
                 'number_of_people' => $booking->number_of_people,
                 'special_request' => $booking->special_request,
-                'menu_items' => $validated['menu_items'] ?? []  // Lưu trực tiếp từ dữ liệu đã validate
+                'menu_items' => $validated['menu_items'] ?? []
             ];
 
             session(['booking_data' => $sessionData]);
-            \Log::info('Session data saved:', session('booking_data'));
 
             DB::commit();
-            \Log::info('Transaction committed successfully');
 
+            // Xử lý theo loại đặt bàn và trạng thái đăng nhập
+            if (!Auth::check() || $validated['booking_type'] === 'only_table') {
+                // Khách vãng lai hoặc user chỉ đặt bàn
+                session()->forget('booking_data');
+                return redirect()->route('front.booking.success')
+                    ->with('success', 'Đặt bàn thành công! Nhân viên của chúng tôi sẽ gọi điện xác nhận trong thời gian sớm nhất.');
+            }
+
+            // User đặt bàn kèm món ăn, chuyển đến trang xác nhận để thanh toán
             return redirect()->route('front.confirm');
 
         } catch (\Exception $e) {
@@ -200,43 +207,84 @@ class BookingController extends Controller
                 ->with('error', 'Không tìm thấy thông tin đặt bàn');
         }
 
-        return view('front.confirm', compact('bookingData'));
+        // Tìm booking mới nhất của user hiện tại
+        $booking = Booking::where('user_id', Auth::id())
+                         ->latest()
+                         ->first();
+
+        if (!$booking) {
+            return redirect()->route('front.booking')
+                ->with('error', 'Không tìm thấy thông tin đặt bàn');
+        }
+
+        // Tính tổng tiền từ booking
+        $totalAmount = $booking->total_amount;
+
+        \Log::info('Confirmation data:', [
+            'booking_id' => $booking->id,
+            'total_amount' => $totalAmount
+        ]);
+
+        // Lưu booking_id vào session
+        session(['current_booking_id' => $booking->id]);
+
+        return view('front.confirm', compact('bookingData', 'booking', 'totalAmount'));
     }
 
     public function processPayment(Request $request)
     {
-        $bookingData = session('booking_data');
-        if (!$bookingData) {
+        \Log::info('Process Payment Started', $request->all());
+        
+        // Lấy booking_id từ session nếu không có trong request
+        $bookingId = $request->booking_id ?? session('current_booking_id');
+        
+        if (!$bookingId) {
+            \Log::error('No booking ID found');
             return redirect()->route('front.booking')
                 ->with('error', 'Không tìm thấy thông tin đặt bàn');
         }
 
         try {
+            \Log::info('Finding booking with ID: ' . $bookingId);
+            $booking = Booking::findOrFail($bookingId);
+            
             // Lấy thông tin cấu hình từ file config
             $vnp_Url = config('vnpay.url');
             $vnp_TmnCode = config('vnpay.tmn_code');
             $vnp_HashSecret = config('vnpay.hash_secret');
             $vnp_ReturnUrl = config('vnpay.return_url');
 
-            $vnp_TxnRef = time() . "-" . rand(1,1000); // Mã đơn hàng
-            $vnp_Amount = $request->amount * 100; // Số tiền * 100 (VNPay yêu cầu)
-            $vnp_Locale = 'vn';
-            $vnp_OrderInfo = 'Thanh toan dat ban - ' . $vnp_TxnRef;
-            $vnp_OrderType = 'billpayment';
-            $vnp_IpAddr = request()->ip();
-            $vnp_CreateDate = date('YmdHis');
+            \Log::info('VNPay Config', [
+                'url' => $vnp_Url,
+                'tmn_code' => $vnp_TmnCode,
+                'return_url' => $vnp_ReturnUrl
+            ]);
+
+            // Tạo mã giao dịch với format: bookingId-timestamp
+            $vnp_TxnRef = $booking->id . '-' . time();
+            
+            // Lưu mã giao dịch vào session
+            session(['vnpay_booking_id' => $booking->id]);
+
+            $vnp_Amount = $request->amount * 100;
+            
+            \Log::info('Payment Details', [
+                'booking_id' => $booking->id,
+                'amount' => $vnp_Amount,
+                'txn_ref' => $vnp_TxnRef
+            ]);
 
             $inputData = array(
                 "vnp_Version" => "2.1.0",
                 "vnp_TmnCode" => $vnp_TmnCode,
                 "vnp_Amount" => $vnp_Amount,
                 "vnp_Command" => "pay",
-                "vnp_CreateDate" => $vnp_CreateDate,
+                "vnp_CreateDate" => date('YmdHis'),
                 "vnp_CurrCode" => "VND",
-                "vnp_IpAddr" => $vnp_IpAddr,
-                "vnp_Locale" => $vnp_Locale,
-                "vnp_OrderInfo" => $vnp_OrderInfo,
-                "vnp_OrderType" => $vnp_OrderType,
+                "vnp_IpAddr" => request()->ip(),
+                "vnp_Locale" => "vn",
+                "vnp_OrderInfo" => "Thanh toan dat ban - " . $vnp_TxnRef,
+                "vnp_OrderType" => "billpayment",
                 "vnp_ReturnUrl" => $vnp_ReturnUrl,
                 "vnp_TxnRef" => $vnp_TxnRef
             );
@@ -261,17 +309,17 @@ class BookingController extends Controller
                 $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
             }
 
-            // Lưu thông tin thanh toán vào session để kiểm tra khi VNPay callback
-            session(['payment_info' => [
-                'txn_ref' => $vnp_TxnRef,
-                'amount' => $request->amount,
-                'booking_data' => $bookingData
-            ]]);
+            \Log::info('Generated VNPay URL', ['url' => $vnp_Url]);
 
-            return redirect($vnp_Url);
+            // Chuyển hướng đến VNPay
+            return redirect()->away($vnp_Url);
 
         } catch (\Exception $e) {
-        
+            \Log::error('Payment Processing Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi xử lý thanh toán');
         }
@@ -352,6 +400,81 @@ class BookingController extends Controller
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi cập nhật đơn đặt bàn.')
                 ->withInput();
+        }
+    }
+
+    public function confirm(Request $request)
+    {
+        // Chỉ xử lý khi user đã đăng nhập
+        if (!Auth::check()) {
+            return redirect()->route('front.booking');
+        }
+
+        $bookingData = session('booking_data');
+        if (!$bookingData) {
+            return redirect()->route('front.booking')
+                ->with('error', 'Không tìm thấy thông tin đặt bàn');
+        }
+
+        return view('front.confirm', compact('bookingData'));
+    }
+
+    public function success()
+    {
+        return view('front.booking.success');
+    }
+
+    public function vnpayReturn(Request $request)
+    {
+        // Kiểm tra checksum
+        $vnp_SecureHash = $request->vnp_SecureHash;
+        $inputData = array();
+        foreach ($request->all() as $key => $value) {
+            if (substr($key, 0, 4) == "vnp_") {
+                $inputData[$key] = $value;
+            }
+        }
+        unset($inputData['vnp_SecureHash']);
+        ksort($inputData);
+        $hashData = "";
+        $i = 0;
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value); 
+            } else {
+                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+        }
+
+        $secureHash = hash_hmac('sha512', $hashData, config('vnpay.vnp_HashSecret'));
+
+        if ($secureHash == $vnp_SecureHash) {
+            // Tìm booking dựa vào vnp_TxnRef (booking ID)
+            $booking = Booking::find($request->vnp_TxnRef);
+            
+            if ($request->vnp_ResponseCode == "00") {
+                // Thanh toán thành công
+                $booking->update([
+                    'payment_status' => 'paid',
+                    'status' => 'confirmed'
+                ]);
+                
+                return redirect()->route('front.booking.success')
+                    ->with('success', 'Đặt bàn và thanh toán thành công!');
+            } else {
+                // Thanh toán thất bại
+                $booking->update([
+                    'payment_status' => 'failed',
+                    'status' => 'cancelled'
+                ]);
+                
+                return redirect()->route('front.booking.index')
+                    ->with('error', 'Thanh toán không thành công. Vui lòng thử lại.');
+            }
+        } else {
+            return redirect()->route('front.booking.index')
+                ->with('error', 'Chữ ký không hợp lệ!');
         }
     }
 } 
