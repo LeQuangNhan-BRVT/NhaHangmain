@@ -23,7 +23,8 @@
     <link href="{{ asset('front-assets/lib/animate/animate.min.css') }}" rel="stylesheet">
     <link href="{{ asset('front-assets/lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
     <link href="{{ asset('front-assets/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet" />
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Customized Bootstrap Stylesheet -->
     <link href="{{ asset('front-assets/css/bootstrap.min.css') }}" rel="stylesheet">
 

@@ -67,6 +67,10 @@
                                 <td colspan="3" class="text-end"><strong>Tổng tiền:</strong></td>
                                 <td><strong>{{ number_format($totalAmount) }}đ</strong></td>
                             </tr>
+                            <tr class="table-info">
+                                <td colspan="3" class="text-end"><strong>Tiền đặt cọc (20%):</strong></td>
+                                <td><strong>{{ number_format($totalAmount * 0.2) }}đ</strong></td>
+                            </tr>
                         </tfoot>
                     </table>
                     @endif
@@ -88,9 +92,15 @@
                     <form action="{{ route('front.booking.process-payment') }}" method="POST" class="mt-4">
                         @csrf
                         <input type="hidden" name="booking_id" value="{{ $booking->id }}">
-                        <input type="hidden" name="amount" value="{{ $totalAmount }}">
+                        <input type="hidden" name="amount" value="{{ $totalAmount * 0.2 }}">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Để đảm bảo đặt bàn thành công, quý khách vui lòng đặt cọc 20% tổng hóa đơn.
+                            <br>
+                            Số tiền đặt cọc sẽ được trừ vào tổng hóa đơn khi thanh toán.
+                        </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-wallet me-2"></i>Thanh toán qua VNPay
+                            <i class="fas fa-wallet me-2"></i>Đặt cọc {{ number_format($totalAmount * 0.2) }}đ qua VNPay
                         </button>
                     </form>
                     @endif

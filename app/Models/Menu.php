@@ -28,4 +28,9 @@ class Menu extends Model
     {
         return $this->belongsTo(Category::class, 'category_code', 'category_code');
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 1);
+    }
 }

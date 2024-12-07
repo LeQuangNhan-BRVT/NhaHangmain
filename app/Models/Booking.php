@@ -9,7 +9,7 @@ class Booking extends Model
     protected $fillable = [
         'user_id', 'name', 'phone', 'booking_date', 
         'number_of_people', 'status', 'special_request',
-        'booking_type', 'total_amount'
+        'booking_type', 'total_amount', 'payment_status',
     ];
 
     protected $casts = [
@@ -53,5 +53,25 @@ class Booking extends Model
     {
         // Cho phép hủy khi đơn đang chờ xác nhận
         return $this->status === 'pending';
+    }
+
+    public function getIsPaymentPendingAttribute()
+    {
+        return $this->payment_status === 'pending';
+    }
+
+    public function getIsPaymentProcessingAttribute()
+    {
+        return $this->payment_status === 'processing';
+    }
+
+    public function getIsPaymentPaidAttribute()
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    public function getIsPaymentFailedAttribute()
+    {
+        return $this->payment_status === 'failed';
     }
 } 

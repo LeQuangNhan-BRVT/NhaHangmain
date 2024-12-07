@@ -11,7 +11,7 @@
     </div>
     <div class="col-md-6">
         <div class="form-floating">
-            <input type="tel" class="form-control" id="phone" name="phone" placeholder="Số điện thoại"
+            <input type="tel" class="form-control" id="phone" name="phone" maxlength="10" placeholder="Số điện thoại"
                 value="{{ old('phone') }}" required>
             <label for="phone">Số điện thoại</label>
             @error('phone')

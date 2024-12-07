@@ -31,7 +31,12 @@ Route::post('/booking', [BookingController::class, 'store'])->name('front.bookin
 Route::get('/booking/success', [BookingController::class, 'success'])->name('front.booking.success');
 Route::get('/booking/confirm', [BookingController::class, 'showConfirmation'])->name('front.confirm');
 Route::post('/booking/process-payment', [BookingController::class, 'processPayment'])->name('front.booking.process-payment');
-Route::get('/booking/vnpay-return', [VNPayController::class, 'return'])->name('front.booking.vnpay-return');
+
+// Route for VNPay return, đảm bảo user đã đăng nhập
+Route::middleware(['auth'])->group(function () {
+    Route::get('/booking/vnpay-return', [BookingController::class, 'vnpayReturn'])
+        ->name('front.booking.vnpay-return');
+});
 
 // User Auth Routes
 Route::middleware('auth')->group(function () {
@@ -50,6 +55,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{booking}/edit', [BookingController::class, 'edit'])->name('edit');
         Route::put('/{booking}', [BookingController::class, 'update'])->name('update');
         Route::put('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+        Route::get('/{booking}/detail', [BookingController::class, 'getBookingDetail'])
+            ->name('detail');
     });
 });
 
@@ -78,6 +85,10 @@ Route::prefix('admin')->group(function () {
         Route::get('/bookings/{id}', [AdminBookingController::class, 'show'])->name('admin.bookings.show');
         Route::post('/bookings/{id}/status', [AdminBookingController::class, 'updateStatus'])->name('admin.bookings.updateStatus');
         Route::delete('/bookings/{id}', [AdminBookingController::class, 'destroy'])->name('admin.bookings.destroy');
+        Route::get('/admin/bookings/{booking}/edit', [AdminBookingController::class, 'edit'])->name('admin.bookings.edit');
+        Route::put('/admin/bookings/{booking}', [AdminBookingController::class, 'update'])->name('admin.bookings.update');
+        Route::post('/admin/bookings/{booking}/complete-payment', [AdminBookingController::class, 'completePayment'])
+            ->name('admin.bookings.complete-payment');
         // Users management (role = 0)
         Route::resource('users', AdminUserController::class, ['as' => 'admin']);
     
