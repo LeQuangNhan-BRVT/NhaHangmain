@@ -8,7 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
-
+use App\Providers\RouteServiceProvider;
 class AuthenticatedSessionController extends Controller
 {
     /**
@@ -22,13 +22,30 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        $request->authenticate();
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $request->session()->regenerate();
+        // Kiểm tra thông tin đăng nhập
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            // Kiểm tra role
+            if (Auth::user()->role == 1) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Tài khoản này không có quyền truy cập.',
+                ])->withInput($request->only('email'));
+            }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            $request->session()->regenerate();
+            return redirect()->intended(RouteServiceProvider::HOME);
+        }
+
+        return back()->withErrors([
+            'email' => 'Thông tin đăng nhập không chính xác.',
+        ])->withInput($request->only('email'));
     }
 
     /**

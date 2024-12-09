@@ -76,103 +76,20 @@ class BookingController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::warning('Validation failed:', ['errors' => $validator->errors()->toArray()]);
                 return redirect()->back()
                     ->withErrors($validator)
                     ->withInput();
             }
 
             $validated = $validator->validated();
-            \Log::info('Validation passed:', $validated);
-
-            // Kiểm tra nếu khách vãng lai và chọn đặt bàn kèm món ăn
-            if (!Auth::check() && $validated['booking_type'] === 'with_menu') {
-                return redirect()->route('front.booking')
-                    ->with('error', 'Bạn cần đăng nhập để đặt bàn kèm món ăn.');
-            }
-
-            DB::beginTransaction();
-            \Log::info('Validated data:', [
-                'booking_type' => $validated['booking_type'],
-                'all' => $validated
-            ]);
-            // Tạo booking
-            $booking = Booking::create([
-                'user_id' => Auth::id(),
-                'name' => $validated['name'],
-                'phone' => $validated['phone'],
-                'booking_date' => $validated['booking_date'],
-                'number_of_people' => $validated['number_of_people'],
-                'special_request' => $validated['special_request'] ?? null,
-                'status' => 'pending',
-                'booking_type' => $validated['booking_type'],
-                'total_amount' => 0
-            ]);
-
-            \Log::info('Created booking:', $booking->toArray());
-
-            // Nếu đặt bàn kèm món ăn
-            if ($validated['booking_type'] === 'with_menu' && !empty($validated['menu_items'])) {
-                $totalAmount = 0;
-                
-                foreach ($validated['menu_items'] as $menuId => $item) {
-                    if (isset($item['selected']) && $item['selected'] === 'on') {
-                        try {
-                            $menu = Menu::findOrFail($menuId);
-                            $subtotal = $menu->price * $item['quantity'];
-
-                            $bookingMenu = BookingMenu::create([
-                                'booking_id' => $booking->id,
-                                'menu_id' => $menuId,
-                                'quantity' => $item['quantity'],
-                                'price' => $menu->price,
-                                'subtotal' => $subtotal
-                            ]);
-                            \Log::info('Created booking menu item:', $bookingMenu->toArray());
-
-                            $totalAmount += $subtotal;
-                        } catch (\Exception $e) {
-                            \Log::error('Error creating booking menu:', [
-                                'menu_id' => $menuId,
-                                'error' => $e->getMessage()
-                            ]);
-                            throw $e;
-                        }
-                    }
-                }
-
-                $booking->update(['total_amount' => $totalAmount]);
-                \Log::info('Updated booking with total amount:', ['booking_id' => $booking->id, 'total' => $totalAmount]);
-            }
 
             // Lưu dữ liệu vào session
-            $sessionData = [
-                'booking_type' => $booking->booking_type,
-                'name' => $booking->name,
-                'phone' => $booking->phone,
-                'booking_date' => $booking->booking_date,
-                'number_of_people' => $booking->number_of_people,
-                'special_request' => $booking->special_request,
-                'menu_items' => $validated['menu_items'] ?? []
-            ];
+            session(['booking_data' => $validated]);
 
-            session(['booking_data' => $sessionData]);
-
-            DB::commit();
-
-            // Xử lý theo loại đặt bàn và trạng thái đăng nhập
-            if (!Auth::check() || $validated['booking_type'] === 'only_table') {
-                // Khách vãng lai hoặc user chỉ đặt bàn
-                session()->forget('booking_data');
-                return redirect()->route('front.booking.success')
-                    ->with('success', 'Đặt bàn thành công! Nhân viên của chúng tôi sẽ gọi điện xác nhận trong thời gian sớm nhất.');
-            }
-
-            // User đặt bàn kèm món ăn, chuyển đến trang xác nhận để thanh toán
-            return redirect()->route('front.confirm');
+            // Chuyển đến trang xác nhận
+            return redirect()->route('front.booking.confirm');
 
         } catch (\Exception $e) {
-            DB::rollBack();
             \Log::error('Booking error:', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -229,7 +146,7 @@ class BookingController extends Controller
         // Lưu booking_id vào session
         session(['current_booking_id' => $booking->id]);
 
-        return view('front.confirm', compact('bookingData', 'booking', 'totalAmount'));
+        return view('front.booking.confirm', compact('bookingData', 'booking', 'totalAmount'));
     }
 
     public function processPayment(Request $request)
@@ -411,18 +328,75 @@ class BookingController extends Controller
 
     public function confirm(Request $request)
     {
-        // Chỉ xử lý khi user đã đăng nhập
-        if (!Auth::check()) {
-            return redirect()->route('front.booking');
-        }
+        try {
+            $bookingData = session('booking_data');
+            if (!$bookingData) {
+                return redirect()->route('front.booking')
+                    ->with('error', 'Không tìm thấy thông tin đặt bàn');
+            }
 
-        $bookingData = session('booking_data');
-        if (!$bookingData) {
+            DB::beginTransaction();
+
+            // Tạo đơn đặt bàn mới
+            $booking = new Booking();
+            $booking->user_id = auth()->id(); // null nếu không đăng nhập
+            $booking->name = $bookingData['name'];
+            $booking->phone = $bookingData['phone'];
+            $booking->booking_date = $bookingData['booking_date'];
+            $booking->number_of_people = $bookingData['number_of_people'];
+            $booking->special_request = $bookingData['special_request'] ?? null;
+            $booking->status = 'pending';
+            $booking->payment_status = 'pending';
+            $booking->booking_type = $bookingData['booking_type'];
+            
+            // Tính tổng tiền nếu có đặt món
+            if ($bookingData['booking_type'] === 'with_menu' && isset($bookingData['menu_items'])) {
+                $totalAmount = 0;
+                foreach ($bookingData['menu_items'] as $menuId => $item) {
+                    if (isset($item['selected']) && $item['selected'] === 'on') {
+                        $menu = Menu::find($menuId);
+                        if ($menu) {
+                            $totalAmount += $menu->price * $item['quantity'];
+                        }
+                    }
+                }
+                $booking->total_amount = $totalAmount;
+            }
+
+            $booking->save();
+
+            // Lưu chi tiết món ăn nếu có
+            if ($bookingData['booking_type'] === 'with_menu' && isset($bookingData['menu_items'])) {
+                foreach ($bookingData['menu_items'] as $menuId => $item) {
+                    if (isset($item['selected']) && $item['selected'] === 'on') {
+                        $menu = Menu::find($menuId);
+                        if ($menu) {
+                            $booking->bookingMenus()->create([
+                                'menu_id' => $menuId,
+                                'quantity' => $item['quantity'],
+                                'price' => $menu->price,
+                                'subtotal' => $menu->price * $item['quantity']
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            // Xóa session booking data
+            session()->forget('booking_data');
+
+            // Chuyển hướng đến trang thành công
+            return redirect()->route('front.booking.success')
+                ->with('success', 'Đặt bàn thành công! Vui lòng chờ nhà hàng xác nhận.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Booking Error: ' . $e->getMessage());
             return redirect()->route('front.booking')
-                ->with('error', 'Không tìm thấy thông tin đặt bàn');
+                ->with('error', 'Có lỗi xảy ra khi xử lý đặt bàn. Vui lòng thử lại.');
         }
-
-        return view('front.confirm', compact('bookingData'));
     }
 
     public function success()

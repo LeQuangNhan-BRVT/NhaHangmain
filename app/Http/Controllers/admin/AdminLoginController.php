@@ -58,7 +58,8 @@ class AdminLoginController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users',
-            'password' => 'required|min:6|confirmed',
+            'phone_number' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|max:10',
+            'password' => 'required|min:8|confirmed',
             'password_confirmation' => 'required'
         ]);
 
@@ -66,6 +67,7 @@ class AdminLoginController extends Controller
             $admin = new User;
             $admin->name = $request->name;
             $admin->email = $request->email;
+            $admin->phone_number = $request->phone_number;
             $admin->password = Hash::make($request->password);
             $admin->role = 1; // Set role là admin
             $admin->save();
@@ -164,7 +166,7 @@ class AdminLoginController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users,email,' . Auth::id(),
-            'phone_number' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/|min:10'
+            'phone_number' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/|max:10'
         ]);
 
         if ($validator->fails()) {

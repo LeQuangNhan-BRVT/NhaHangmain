@@ -28,8 +28,8 @@
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Chờ xác nhận</option>
                                 <option value="confirmed" {{ request('status') == 'confirmed' ? 'selected' : '' }}>Đã xác nhận</option>
-                                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
                                 <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Hoàn thành</option>
+                                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
                             </select>
                         </div>
                         <div class="col-md-2 mb-2">
@@ -37,7 +37,8 @@
                                 <option value="">Tất cả TT thanh toán</option>
                                 <option value="pending" {{ request('payment_status') == 'pending' ? 'selected' : '' }}>Chờ thanh toán</option>
                                 <option value="processing" {{ request('payment_status') == 'processing' ? 'selected' : '' }}>Đang xử lý</option>
-                                <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>Đã thanh toán</option>
+                                <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>Đã đặt cọc</option>
+                                <option value="fully_paid" {{ request('payment_status') == 'fully_paid' ? 'selected' : '' }}>Đã thanh toán đầy đủ</option>
                                 <option value="failed" {{ request('payment_status') == 'failed' ? 'selected' : '' }}>Thanh toán thất bại</option>
                             </select>
                         </div>
@@ -129,6 +130,7 @@
                                 <select class="form-control booking-status" data-id="{{ $booking->id }}">
                                     <option value="pending" {{ $booking->status == 'pending' ? 'selected' : '' }}>Chờ xác nhận</option>
                                     <option value="confirmed" {{ $booking->status == 'confirmed' ? 'selected' : '' }}>Đã xác nhận</option>
+                                    <option value="completed" {{ $booking->status == 'completed' ? 'selected' : '' }}>Hoàn thành</option>
                                     <option value="cancelled" {{ $booking->status == 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
                                 </select>
                             </td>
@@ -141,7 +143,10 @@
                                         <span class="badge badge-info">Đang xử lý</span>
                                         @break
                                     @case('paid')
-                                        <span class="badge badge-success">Đã thanh toán</span>
+                                        <span class="badge badge-success">Đã đặt cọc</span>
+                                        @break
+                                    @case('fully_paid')
+                                        <span class="badge badge-success">Đã thanh toán đầy đủ</span>
                                         @break
                                     @case('failed')
                                         <span class="badge badge-danger">Thanh toán thất bại</span>

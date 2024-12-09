@@ -77,7 +77,7 @@
 
                     <!-- Form xác nhận đặt bàn -->
                     @if(!Auth::check())
-                    <form action="{{ route('front.booking.confirm') }}" method="POST" class="mt-4">
+                    <form action="{{ route('front.booking.process-confirm') }}" method="POST" class="mt-4">
                         @csrf
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
@@ -88,20 +88,19 @@
                         </button>
                     </form>
                     @else
-                    <!-- Form thanh toán VNPay cho khách đã đăng nhập -->
-                    <form action="{{ route('front.booking.process-payment') }}" method="POST" class="mt-4">
+                    <!-- Form xác nhận đặt bàn cho khách đã đăng nhập -->
+                    <form action="{{ route('front.booking.process-confirm') }}" method="POST" class="mt-4">
                         @csrf
-                        <input type="hidden" name="booking_id" value="{{ $booking->id }}">
-                        <input type="hidden" name="amount" value="{{ $totalAmount * 0.2 }}">
                         <div class="alert alert-info mb-3">
                             <i class="fas fa-info-circle me-2"></i>
-                            Để đảm bảo đặt bàn thành công, quý khách vui lòng đặt cọc 20% tổng hóa đơn.
-                            <br>
-                            Số tiền đặt cọc sẽ được trừ vào tổng hóa đơn khi thanh toán.
+                            Sau khi xác nhận đặt bàn, bạn có thể vào phần "Lịch sử đặt bàn" để xem chi tiết và thanh toán tiền cọc.
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-wallet me-2"></i>Đặt cọc {{ number_format($totalAmount * 0.2) }}đ qua VNPay
+                            <i class="fas fa-check me-2"></i>Xác nhận đặt bàn
                         </button>
+                        <a href="{{ route('front.booking') }}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại
+                        </a>
                     </form>
                     @endif
                 </div>

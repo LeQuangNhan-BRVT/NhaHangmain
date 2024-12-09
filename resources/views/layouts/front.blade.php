@@ -86,6 +86,7 @@
 
     <!-- Template Javascript -->
     <script src="{{ asset('front-assets/js/main.js') }}"></script>
+    <script src="{{ asset('front-assets/js/booking-modal.js') }}"></script>
     @stack('scripts')
 </body>
 </html> 

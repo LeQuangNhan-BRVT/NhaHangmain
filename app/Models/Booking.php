@@ -10,10 +10,12 @@ class Booking extends Model
         'user_id', 'name', 'phone', 'booking_date', 
         'number_of_people', 'status', 'special_request',
         'booking_type', 'total_amount', 'payment_status',
+        'full_payment_time'
     ];
 
     protected $casts = [
-        'booking_date' => 'datetime'
+        'booking_date' => 'datetime',
+        'full_payment_time' => 'datetime'
     ];
 
     public function user()

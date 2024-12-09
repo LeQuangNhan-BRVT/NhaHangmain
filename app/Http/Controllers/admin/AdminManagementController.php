@@ -19,7 +19,7 @@ class AdminManagementController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
                   ->orWhere('email', 'like', "%$search%")
-                  ->orWhere('phone', 'like', "%$search%");
+                  ->orWhere('phone_number', 'like', "%$search%");
             });
         }
 
@@ -37,14 +37,14 @@ class AdminManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:20|unique:users',
+            'phone_number' => 'required|string|max:10|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password),
             'role' => 1, // Role admin
         ]);
@@ -66,14 +66,14 @@ class AdminManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($admin->id)],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('users')->ignore($admin->id)],
+            'phone_number' => ['required', 'string', 'max:10', Rule::unique('users')->ignore($admin->id)],
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $adminData = [
             'name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'phone_number' => $request->phone_number,
         ];
 
         if ($request->filled('password')) {

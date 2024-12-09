@@ -41,9 +41,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="phone">Số điện thoại</label>
-                                <input type="text" name="phone" id="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}">
-                                @error('phone')
+                                <label for="phone_number">Số điện thoại</label>
+                                <input type="text" name="phone_number" id="phone_number" maxlength="10" class="form-control @error('phone_number') is-invalid @enderror" value="{{ old('phone_number') }}">
+                                @error('phone_number')
                                     <span class="invalid-feedback">{{ $message }}</span>
                                 @enderror
                             </div>

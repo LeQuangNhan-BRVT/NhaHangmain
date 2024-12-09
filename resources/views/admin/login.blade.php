@@ -47,12 +47,8 @@
 							@enderror
 				  		</div>
 				  		<div class="row">
-							<div class="col-8">
-								<a href="{{ route('admin.create') }}" class="btn btn-success">
-									<i class="fas fa-user-plus"></i> Tạo tài khoản
-								</a>
-							</div>
-							<div class="col-4">
+							
+							<div class="col-12">
 					  			<button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
 							</div>
 				  		</div>

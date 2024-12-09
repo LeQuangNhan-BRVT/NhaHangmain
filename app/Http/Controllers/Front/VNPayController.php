@@ -13,6 +13,10 @@ class VNPayController extends Controller
     {
         Log::info('VNPay Return Data:', $request->all());
 
+        // Lưu user_id từ session nếu có
+        $userId = auth()->id();
+        Log::info('Current User ID: ' . $userId);
+
         // Kiểm tra checksum
         $vnp_SecureHash = $request->vnp_SecureHash;
         $inputData = array();
@@ -62,10 +66,16 @@ class VNPayController extends Controller
                     'status' => 'confirmed'
                 ]);
                 
-                // Xóa session sau khi xử lý xong
-                session()->forget('vnpay_booking_id');
+                // Chỉ xóa session liên quan đến thanh toán
+                $request->session()->forget('vnpay_booking_id');
                 
                 Log::info('Payment successful for booking: ' . $bookingId);
+                
+                // Kiểm tra và duy trì session đăng nhập
+                if ($userId) {
+                    auth()->loginUsingId($userId);
+                }
+                
                 return redirect()->route('front.booking.success')
                     ->with('success', 'Đặt bàn và thanh toán thành công!');
             } else {
@@ -75,15 +85,27 @@ class VNPayController extends Controller
                     'status' => 'cancelled'
                 ]);
                 
-                // Xóa session sau khi xử lý xong
-                session()->forget('vnpay_booking_id');
+                // Chỉ xóa session liên quan đến thanh toán
+                $request->session()->forget('vnpay_booking_id');
                 
                 Log::error('Payment failed for booking: ' . $bookingId . ' with response code: ' . $request->vnp_ResponseCode);
+                
+                // Kiểm tra và duy trì session đăng nhập
+                if ($userId) {
+                    auth()->loginUsingId($userId);
+                }
+                
                 return redirect()->route('front.booking')
                     ->with('error', 'Thanh toán không thành công. Vui lòng thử lại.');
             }
         } else {
             Log::error('Invalid hash');
+            
+            // Kiểm tra và duy trì session đăng nhập
+            if ($userId) {
+                auth()->loginUsingId($userId);
+            }
+            
             return redirect()->route('front.booking')
                 ->with('error', 'Chữ ký không hợp lệ!');
         }

@@ -76,26 +76,34 @@ class AdminBookingController extends Controller
     {
         $booking = Booking::findOrFail($id);
         
-        // Kiểm tra logic trước khi cập nhật trạng thái
-        if ($request->status == 'cancelled' && $booking->payment_status == 'paid') {
+        try {
+            DB::transaction(function() use ($request, $booking) {
+                // Nếu là đơn chỉ đặt bàn và trạng thái chuyển sang hoàn thành
+                if ($booking->booking_type === 'only_table' && $request->status === 'completed') {
+                    $booking->status = 'completed';
+                    $booking->payment_status = 'fully_paid';
+                    $booking->full_payment_time = now();
+                    $booking->save();
+                } else {
+                    if ($request->status == 'cancelled' && $booking->payment_status == 'pending') {
+                        $booking->payment_status = 'failed';
+                    }
+                    $booking->status = $request->status;
+                    $booking->save();
+                }
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Cập nhật trạng thái đặt bàn thành công'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Lỗi cập nhật trạng thái: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Không thể hủy đơn đã thanh toán'
-            ], 400);
+                'message' => 'Có lỗi xảy ra khi cập nhật trạng thái: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Nếu hủy đơn, cập nhật cả trạng thái thanh toán
-        if ($request->status == 'cancelled' && $booking->payment_status == 'pending') {
-            $booking->payment_status = 'failed';
-        }
-
-        $booking->status = $request->status;
-        $booking->save();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Cập nhật trạng thái đặt bàn thành công'
-        ]);
     }
 
     public function show($id)
@@ -158,7 +166,7 @@ class AdminBookingController extends Controller
                 'booking_id' => $booking->id,
                 'amount' => $finalAmount,
                 'payment_type' => 'final',
-                'payment_method' => 'cash', // hoặc phương thức thanh toán khác
+                'payment_method' => 'cash', 
                 'status' => 'completed',
                 'payment_time' => now(),
             ]);
@@ -174,10 +182,10 @@ class AdminBookingController extends Controller
                 'message' => 'Thanh toán thành công'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Payment Error: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra khi xửlý thanh toán'
+                'message' => 'Có lỗi xảy ra khi xử lý thanh toán'
             ]);
         }
     }
@@ -239,6 +247,29 @@ class AdminBookingController extends Controller
             return back()
                 ->withInput()
                 ->with('error', 'Có lỗi xảy ra khi cập nhật đơn đặt bàn: ' . $e->getMessage());
+        }
+    }
+
+    public function confirmFullPayment(Booking $booking)
+    {
+        try {
+            DB::transaction(function() use ($booking) {
+                $booking->update([
+                    'status' => 'completed', // Chuyển trạng thái đơn sang hoàn thành
+                    'payment_status' => 'fully_paid', // Cập nhật trạng thái thanh toán
+                    'full_payment_time' => now() // Lưu thời gian thanh toán đầy đủ
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã cập nhật trạng thái thanh toán'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

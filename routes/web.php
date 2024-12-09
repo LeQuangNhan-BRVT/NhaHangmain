@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\UserMenuController;
 use App\Http\Controllers\Front\VNPayController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
 
 
 
@@ -29,7 +31,8 @@ Route::get('/menu/{id}', [UserMenuController::class, 'detail'])->name('front.men
 Route::get('/booking', [BookingController::class, 'create'])->name('front.booking');
 Route::post('/booking', [BookingController::class, 'store'])->name('front.booking.store');
 Route::get('/booking/success', [BookingController::class, 'success'])->name('front.booking.success');
-Route::get('/booking/confirm', [BookingController::class, 'showConfirmation'])->name('front.confirm');
+Route::get('/booking/confirm', [BookingController::class, 'showConfirmation'])->name('front.booking.confirm');
+Route::post('/booking/confirm', [BookingController::class, 'confirm'])->name('front.booking.process-confirm');
 Route::post('/booking/process-payment', [BookingController::class, 'processPayment'])->name('front.booking.process-payment');
 
 // Route for VNPay return, đảm bảo user đã đăng nhập
@@ -89,6 +92,8 @@ Route::prefix('admin')->group(function () {
         Route::put('/admin/bookings/{booking}', [AdminBookingController::class, 'update'])->name('admin.bookings.update');
         Route::post('/admin/bookings/{booking}/complete-payment', [AdminBookingController::class, 'completePayment'])
             ->name('admin.bookings.complete-payment');
+        Route::post('/bookings/{booking}/confirmFullPayment', [AdminBookingController::class, 'confirmFullPayment'])
+            ->name('admin.bookings.confirmFullPayment');
         // Users management (role = 0)
         Route::resource('users', AdminUserController::class, ['as' => 'admin']);
     
@@ -106,8 +111,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/change-password', [AdminLoginController::class, 'updatePassword'])->name('admin.updatePassword');
     });
     
-    Route::get('/create', [AdminLoginController::class, 'create'])->name('admin.create');
-    Route::post('/store', [AdminLoginController::class, 'store'])->name('admin.store');
+   
     Route::get('/forgot-password', [AdminLoginController::class, 'forgotPassword'])->name('admin.forgotPassword');
     Route::post('/forgot-password', [AdminLoginController::class, 'forgotPasswordProcess'])->name('admin.forgotPasswordProcess');
     Route::get('/reset-password/{token}', [AdminLoginController::class, 'resetPassword'])->name('admin.resetPassword');
@@ -115,4 +119,18 @@ Route::prefix('admin')->group(function () {
 });
 
 // Authentication Routes
+Route::middleware('guest')->group(function () {
+    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+    
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+    
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+        ->name('password.reset');
+    
+    Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->name('password.update');
+});
+
 require __DIR__.'/auth.php';

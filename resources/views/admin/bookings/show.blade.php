@@ -56,6 +56,7 @@
                                     <select class="form-control booking-status" data-id="{{ $booking->id }}">
                                         <option value="pending" {{ $booking->status == 'pending' ? 'selected' : '' }}>Chờ xác nhận</option>
                                         <option value="confirmed" {{ $booking->status == 'confirmed' ? 'selected' : '' }}>Đã xác nhận</option>
+                                        <option value="completed" {{ $booking->status == 'completed' ? 'selected' : '' }}>Hoàn thành</option>
                                         <option value="cancelled" {{ $booking->status == 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
                                     </select>
                                 </td>
@@ -102,8 +103,12 @@
                                         <span class="badge badge-info">Đang xử lý</span>
                                     @elseif($booking->payment_status === 'paid')
                                         <span class="badge badge-success">Đã đặt cọc</span>
+                                    @elseif($booking->payment_status === 'fully_paid')
+                                        <span class="badge badge-success">Đã thanh toán đầy đủ</span>
                                     @elseif($booking->payment_status === 'failed')
                                         <span class="badge badge-danger">Thanh toán thất bại</span>
+                                    @else
+                                        <span class="badge badge-secondary">Không xác định</span>
                                     @endif
                                 </td>
                             </tr>
@@ -117,18 +122,37 @@
                                 <td>{{ $booking->transaction_id ?: 'N/A' }}</td>
                             </tr>
                             @endif
+                            @if($booking->payment_status === 'paid' && $booking->status === 'confirmed')
+                            <tr>
+                                <td colspan="2">
+                                    <div class="text-center mt-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <button type="button" 
+                                                        class="btn btn-primary" 
+                                                        data-toggle="modal" 
+                                                        data-target="#qrModal">
+                                                    <i class="fas fa-qrcode"></i>
+                                                    Hiển thị mã QR thanh toán ({{ number_format($booking->total_amount * 0.8) }}đ)
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" 
+                                                        class="btn btn-success confirm-full-payment-btn"
+                                                        data-booking="{{ $booking->id }}">
+                                                    <i class="fas fa-check-double"></i>
+                                                    Xác nhận đã thanh toán đầy đủ
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                         </table>
 
                         @if($booking->payment_status === 'paid' && $booking->status === 'confirmed')
-                        <div class="text-center mt-3">
-                            <button type="button" 
-                                    class="btn btn-success" 
-                                    data-toggle="modal" 
-                                    data-target="#paymentModal">
-                                <i class="fas fa-money-bill-wave"></i>
-                                Thanh toán số tiền còn lại ({{ number_format($booking->total_amount * 0.8) }}đ)
-                            </button>
-                        </div>
+                        
 
                         <!-- Modal xác nhận thanh toán -->
                         <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog">
@@ -215,6 +239,28 @@
         </div>
     </div>
 </section>
+
+<!-- Modal QR Code -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mã QR thanh toán</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <img src="{{ asset('admin-assets/img/credit/qrcode.png') }}" 
+                     alt="QR Code" 
+                     class="img-fluid">
+                <div class="mt-2">
+                    <small class="text-muted">Khách hàng có thể quét mã QR này để thanh toán số tiền còn lại</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('customjs')
@@ -264,6 +310,32 @@ $(document).ready(function() {
                 alert('Có lỗi xảy ra khi xử lý thanh toán');
             }
         });
+    });
+
+    // Xử lý xác nhận thanh toán đầy đủ
+    $('.confirm-full-payment-btn').click(function() {
+        var bookingId = $(this).data('booking');
+        
+        if (confirm('Xác nhận đã nhận đủ thanh toán cho đơn đặt bàn này?')) {
+            $.ajax({
+                url: '{{ route("admin.bookings.confirmFullPayment", $booking->id) }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Đã xác nhận thanh toán đầy đủ!');
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Có lỗi xảy ra khi xử lý yêu cầu');
+                }
+            });
+        }
     });
 });
 </script>
