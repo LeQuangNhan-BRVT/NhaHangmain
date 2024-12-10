@@ -82,11 +82,10 @@
                                                 @if($booking->status === 'pending' && $booking->payment_status === 'pending')
                                                     <form action="{{ route('bookings.cancel', $booking->id) }}" 
                                                           method="POST" 
-                                                          class="d-inline" 
-                                                          onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
+                                                          class="d-inline">
                                                         @csrf
                                                         @method('PUT')
-                                                        <button type="submit" class="btn btn-danger btn-sm">
+                                                        <button type="submit" class="btn btn-danger btn-sm cancel-booking">
                                                             <i class="fas fa-times"></i> Hủy đơn
                                                         </button>
                                                     </form>
@@ -124,8 +123,45 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Debug log
-    console.log('Script loaded');
+    // Kiểm tra SweetAlert
+    console.log('SweetAlert exists:', typeof Swal !== 'undefined');
+
+    $(document).on('click', '.cancel-booking', function(e) {
+        console.log('Nút hủy được click');
+        e.preventDefault();
+        console.log('Đã prevent default');
+        
+        const form = $(this).closest('form');
+        console.log('Form được tìm thấy:', form.length > 0);
+        console.log('Action của form:', form.attr('action'));
+        
+        try {
+            console.log('Bắt đầu hiển thị SweetAlert');
+            Swal.fire({
+                title: 'Xác nhận hủy đơn',
+                text: "Bạn có chắc chắn muốn hủy đơn này?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#fea116',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Không'
+            }).then((result) => {
+                console.log('SweetAlert callback triggered');
+                console.log('Kết quả từ SweetAlert:', result);
+                if (result.isConfirmed) {
+                    console.log('Người dùng đã xác nhận, submit form');
+                    form.submit();
+                } else {
+                    console.log('Người dùng đã hủy thao tác');
+                }
+            }).catch(error => {
+                console.error('SweetAlert error:', error);
+            });
+        } catch (error) {
+            console.error('Error showing SweetAlert:', error);
+        }
+    });
 
     // Xử lý khi click nút Chi tiết
     $(document).on('click', '.btn-view-detail', function(e) {
@@ -168,5 +204,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Hiển thị thông báo thành công nếu có
+var successMessage = '{!! session("success") !!}';
+console.log('Success message:', successMessage);
+if (successMessage) {
+    Swal.fire({
+        title: 'Thành công!',
+        text: successMessage,
+        icon: 'success',
+        confirmButtonColor: '#fea116',
+        confirmButtonText: 'Đồng ý'
+    });
+}
 </script>
 @endpush

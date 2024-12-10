@@ -104,15 +104,10 @@ class BookingController extends Controller
     // Hủy booking
     public function cancel(Booking $booking)
     {
-        if ($booking->user_id !== Auth::id()) {
-            return redirect()->route('bookings.index')
-                ->with('error', 'Bạn không có quyền hủy đặt bàn này.');
-        }
-
-        $booking->update(['status' => 'cancelled']);
-
-        return redirect()->route('bookings.index')
-            ->with('success', 'Đặt bàn đã được hủy.');
+        $booking->status = 'cancelled';
+        $booking->save();
+        
+        return redirect()->back()->with('success', 'Đã hủy đơn đặt bàn thành công!');
     }
 
     public function showConfirmation()

@@ -9,7 +9,7 @@
 
     <!-- Favicon -->
     <link href="{{ asset('front-assets/img/favicon.ico') }}" rel="icon">
-
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,7 +83,7 @@
     <script src="{{ asset('front-assets/lib/tempusdominus/js/moment.min.js') }}"></script>
     <script src="{{ asset('front-assets/lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
     <script src="{{ asset('front-assets/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     <!-- Template Javascript -->
     <script src="{{ asset('front-assets/js/main.js') }}"></script>
     <script src="{{ asset('front-assets/js/booking-modal.js') }}"></script>
